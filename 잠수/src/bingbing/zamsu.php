@@ -2,25 +2,22 @@
 namespace bingbing;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
-use pocketmine\scheduler\PluginTask;
 use onebone\economyapi\EconomyAPI;
 use pocketmine\Player;
 use pocketmine\math\Vector3;
 
 use pocketmine\event\Listener;
-use pocketmine\block\Diamond;
-use pocketmine\block\Block;
+
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\block\SignChangeEvent;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
 use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\network\mcpe\protocol\AddItemEntityPacket;
-use pocketmine\block\Gold;
-use pocketmine\entity\Entity;
+
 use pocketmine\tile\Sign;
-use pocketmine\event\player\PlayerMoveEvent;
+
+use pocketmine\scheduler\Task;
 
 class zamsu extends PluginBase implements Listener{
     
@@ -31,7 +28,7 @@ class zamsu extends PluginBase implements Listener{
         $this->op = $this->option->getAll();
         $this->shopdb["shop"] = new Config($this->getDataFolder()."shop.yml",Config::YAML,[ "number" => 0]);
         $this->shop["shop"] = $this->shopdb["shop"]->getAll();
-        $this->getServer()->getScheduler()->scheduleRepeatingTask( new task($this), $this->op["time"]*20 );
+        $this->getScheduler()->scheduleRepeatingTask( new task1($this), $this->op["time"]*20 );
         
     }
     public function givemoney(Player $name){
@@ -183,7 +180,15 @@ class zamsu extends PluginBase implements Listener{
         }
     
 }
-class task extends PluginTask{
+class task1 extends Task{
+    public $plugin;
+    public function __construct($plugin){
+        $this->plugin = $plugin;
+    }
+    public function getOwner(){
+        return $this->plugin;
+        
+    }
     public function onRun(int $currentTick){
         foreach($this->getOwner()->getServer()->getOnlinePlayers() as $player){
             if ($this->getOwner()->place($player) == "true"){ 
