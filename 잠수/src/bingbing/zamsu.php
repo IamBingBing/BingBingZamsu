@@ -14,13 +14,14 @@ use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
 use pocketmine\item\enchantment\EnchantmentInstance;
+use pocketmine\item\ItemFactory;
 
 use pocketmine\tile\Sign;
 
 use pocketmine\scheduler\Task;
 
 class zamsu extends PluginBase implements Listener{
-    
+
     public function onEnable(){
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         @mkdir($this->getDataFolder());
@@ -29,17 +30,17 @@ class zamsu extends PluginBase implements Listener{
         $this->shopdb["shop"] = new Config($this->getDataFolder()."shop.yml",Config::YAML,[ "number" => 0]);
         $this->shop["shop"] = $this->shopdb["shop"]->getAll();
         $this->getScheduler()->scheduleRepeatingTask( new task1($this), $this->op["time"]*20 );
-        
+
     }
     public function givemoney(Player $name){
         $money = mt_rand($this->op["low"] , $this->op["high"]);
         EconomyAPI::getInstance()->addMoney($name, $money);
         $name->getPlayer()->sendMessage("§b[§f잠수§b]§f 돈  ".$money."을  받았습니다");
-        
+
     }
     public function giveitem(Player $name){
         $item = explode(":",$this->op["item"]  );
-        
+
         if ($this->rand(10)){
         $name->getPlayer()->getInventory()->addItem(\pocketmine\item\Item::get($item[0] , $item[1] , $item[2]));
         $name->getPlayer()->sendMessage("§b[§f잠수§b]§f 아이템코드  ".$item[0].":".$item[1]." 을 ".$item[2]."개 받았습니다.");
@@ -58,14 +59,14 @@ class zamsu extends PluginBase implements Listener{
         $this->shopdb["shop"]->setAll($this->shop["shop"]);
         $this->shopdb["shop"]->save();
     }
-    
+
     public function place(player $name){
-        
+
         if ($name->getLevel()->getBlock(new Vector3($name->getFloorX() , $name->getFloorY()-1 , $name->getFloorZ() ))->getId() == $this->op["block"]){
-                return "true";
+                return true;
             }
             else {
-                return "false";
+                return false;
             }
         }
         public function touch(PlayerInteractEvent$event){
@@ -77,7 +78,7 @@ class zamsu extends PluginBase implements Listener{
             if (isset($this->shop["shop"][$x.":".$y.":".$z.":".$level->getName()] )){
                 $sign = $level->getTile(new Vector3($x ,$y,$z));
                 if ($sign instanceof Sign){
-                    if ($event->getPlayer()->getInventory()->contains(Item::get($tem[0] , $tem[1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2] ))){
+                    if ($event->getPlayer()->getInventory()->contains(ItemFactory::get($tem[0] , $tem[1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2] ))){
                         if ($this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][0] == "아이템"){
                             $id = $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][1];
                                             $item = new Item($id[0],$id[1],$sign->getLine(1));
@@ -86,16 +87,16 @@ class zamsu extends PluginBase implements Listener{
                                                 $item->addEnchantment(new EnchantmentInstance(Enchantment::init($id[3]), $id[4]));
                                             }
                                             $event->getPlayer()->getInventory()->addItem($item);
-                                            $event->getPlayer()->getInventory()->removeItem(Item::get($this->op["item"][0] , $this->op["item"][1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2]) );
+                                            $event->getPlayer()->getInventory()->removeItem(ItemFactory::get($tem[0] , $tem[1], int($this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2])) );
                                             $event->getPlayer()->sendMessage("§f[ §b점수상점  §f] ".$sign->getLine(1)."을/를 구매하였습니다");
-                                        
-                                        
+
+
                                     }
                                     else {
-                                        if ($event->getPlayer()->getInventory()->contains(Item::get($tem[0] , $tem[1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2] ))){
-                                            EconomyAPI::getInstance()->addMoney($event->getPlayer(),explode(":",$sign->getLine(2))[1]);
-                                            $event->getPlayer()->getInventory()->removeItem(Item::get($this->op["money"][0] , $this->op["money"][1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2]));
-                                            $event->getPlayer()->sendMessage("§f[ §b점수상점  §f] ".$sign->getLine(2)."을/를 구매하였습니다");
+                                        if ($event->getPlayer()->getInventory()->contains(ItemFactory::get($tem[0] , $tem[1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2] ))){
+                                            EconomyAPI::getInstance()->addMoney($event->getPlayer(),$this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][1]);
+                                            $event->getPlayer()->getInventory()->removeItem(ItemFactory::get($tem[0] , $tem[1], $this->shop["shop"][$x.":".$y.":".$z.":".$level->getFolderName()][2]));
+                                            $event->getPlayer()->sendMessage("§f[ §b점수상점  §f] ".$sign->getLine(1)."을/를 구매하였습니다");
                                         }
                                         else {
                                             $event->getPlayer()->sendMessage("§f[ §b점수상점  §f] 코인이 부족합니다");
@@ -107,7 +108,7 @@ class zamsu extends PluginBase implements Listener{
                                 }
                 }
             }
-             
+
         }
         public function break (BlockBreakEvent $event){
             $block = $event->getBlock();
@@ -115,10 +116,10 @@ class zamsu extends PluginBase implements Listener{
             $y = $event->getBlock()->getFloorY();
             $z = $event->getBlock()->getFloorZ();
             $level = $event->getBlock()->getLevel()->getFolderName();
-            
+
             if ($event->getPlayer()->isOp() && isset($this->shop["shop"][$x.":".$y.":".$z.":".$level])){
                 if ($block->getId() == "63"  or $block->getId() == "68" or $block->getId() == "323"&& isset($this->shop["shop"][$x.":".$y.":".$z.":".$level])){
-               
+
                 unset($this->shop["shop"][$x.":".$y.":".$z.":".$level]);
                                     $event->getPlayer()->sendMessage("삭제완료");
                                     $this->save();
@@ -127,7 +128,7 @@ class zamsu extends PluginBase implements Listener{
             else if(isset($this->shop["shop"][$x.":".$y.":".$z.":".$level])){
                 $event->setCancelled(true);
             }
-            
+
         }
         public function change(SignChangeEvent$event){
             $l0 = $event->getLine(0);
@@ -138,8 +139,8 @@ class zamsu extends PluginBase implements Listener{
             $y = $event->getBlock()->getFloorY();
             $z = $event->getBlock()->getFloorZ();
             $level = $event->getBlock()->getLevel()->getFolderName();
-            
-            
+
+
             if ($l0 == "잠수상점" && $event->getPlayer()->isOp()){
                 switch ($l1){
                     case "돈":
@@ -154,12 +155,12 @@ class zamsu extends PluginBase implements Listener{
                             break;
                         }
                         else{
-                            
+
                         }
                     default:
                         $cm = explode(":", $l1);
                         if ($cm[0] == "아이템"){
-                        
+
                             $id = explode(":", $l2);
                                 $event->setLine(0, "§f[ §b점수상점  §f]");
                                 $event->setLine(1, $cm[1]);
@@ -170,15 +171,15 @@ class zamsu extends PluginBase implements Listener{
                                 $this->shop["shop"]["number"] = $this->shop["shop"]["number"]+1;
                                 break;
                             }
-                            
-                        
+
+
                 }
             }
         }
         public function onDisable(){
             $this->save();
         }
-    
+
 }
 class task1 extends Task{
     public $plugin;
@@ -187,11 +188,11 @@ class task1 extends Task{
     }
     public function getOwner(){
         return $this->plugin;
-        
+
     }
     public function onRun(int $currentTick){
         foreach($this->getOwner()->getServer()->getOnlinePlayers() as $player){
-            if ($this->getOwner()->place($player) == "true"){ 
+            if ($this->getOwner()->place($player)){
                 $this->getOwner()->giveitem($player);
                 $this->getOwner()->givemoney($player);
             }
